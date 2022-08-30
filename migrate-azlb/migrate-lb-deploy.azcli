@@ -66,9 +66,9 @@ nvanames=$(i=1;while [ $i -le $instances ];do echo $AzurehubName-$nvaintname$i; 
 for nvaname in $nvanames
 do
  # Enable routing, NAT and BGP on Linux NVA:
- az network public-ip create --name $nvaname-pip --resource-group $rg --location $location --sku Standard --output none
- az network nic create --name $nvaname-nic --resource-group $rg --subnet $nvasubnetname --vnet $AzurehubName-vnet --public-ip-address $nvaname-pip --ip-forwarding true -o none
- az vm create --resource-group $rg --location $location --name $nvaname --size Standard_B1s --nics $nvaname-nic  --image UbuntuLTS --admin-username $username --admin-password $password -o none
+ az network public-ip create --name $nvaname-pip --resource-group $rg --location $location --sku Standard --output none --only-show-errors
+ az network nic create --name $nvaname-nic --resource-group $rg --subnet $nvasubnetname --vnet $AzurehubName-vnet --public-ip-address $nvaname-pip --ip-forwarding true -o none --only-show-errors
+ az vm create --resource-group $rg --location $location --name $nvaname --size Standard_B1s --nics $nvaname-nic  --image UbuntuLTS --admin-username $username --admin-password $password -o none --only-show-errors
  
  # Enable routing and NAT on Linux NVA:
  scripturi="https://raw.githubusercontent.com/dmauser/azure-loadbalancer/main/migrate-azlb/scripts/iptables.sh"
@@ -78,8 +78,8 @@ do
 done
 
 # Creating Load Balancer, probe and rule
-echo Creating Load Balancer, probe and rule
-az network lb create -g $rg --name $AzurehubName-nvalb --sku Standard --frontend-ip-name frontendip1 --backend-pool-name nvabackend1 --vnet-name $AzurehubName-vnet --subnet=$nvasubnetname --output none
+echo 'Creating Load Balancer, frontendip1 (non-zonal) probe and rule'
+az network lb create -g $rg --name $AzurehubName-nvalb --sku Standard --frontend-ip-name frontendip1 --backend-pool-name nvabackend1 --vnet-name $AzurehubName-vnet --subnet=$nvasubnetname --output none --only-show-errors
 az network lb probe create -g $rg --lb-name $AzurehubName-nvalb --name sshprobe --protocol tcp --port 22 --output none  
 # Rule has floating IP enabled
 az network lb rule create -g $rg --lb-name $AzurehubName-nvalb --name haportrule1 --protocol all --frontend-ip-name frontendip1 --backend-pool-name nvabackend1 --probe-name sshprobe --frontend-port 0 --backend-port 0 --output none --floating-ip true
@@ -87,7 +87,7 @@ az network lb rule create -g $rg --lb-name $AzurehubName-nvalb --name haportrule
 ## ***** Add Frontend IP2 for the Zonal + HA Port rule to the same backend VMs
 # Creating frontendip2 as Zonal
 echo Creating frontendip2 as Zonal
-az network lb frontend-ip create -g $rg --name frontendip2 --lb-name $AzurehubName-nvalb  --vnet-name $AzurehubName-vnet --subnet=$nvasubnetname --zone 1 2 3 --output none
+az network lb frontend-ip create -g $rg --name frontendip2 --lb-name $AzurehubName-nvalb  --vnet-name $AzurehubName-vnet --subnet=$nvasubnetname --zone 1 2 3 --output none --only-show-errors
 # Creating HA Port rule for Frontendip2
 echo Creating HA Port rule for Frontendip2
 az network lb rule create -g $rg --lb-name $AzurehubName-nvalb --name haportrule2 --protocol all --frontend-ip-name frontendip2 --backend-pool-name nvabackend1 --probe-name sshprobe --frontend-port 0 --backend-port 0 --output none --floating-ip true 
@@ -114,7 +114,7 @@ az network vnet subnet update -g $rg --name $nvasubnetname --vnet-name $Azurehub
 ### OPTIONAL Installing tools for networking connectivity validation such as traceroute, tcptraceroute, iperf and others (check link below for more details) 
 echo Installing tools for networking connectivity validation such as traceroute, tcptraceroute, iperf and others  
 nettoolsuri="https://raw.githubusercontent.com/dmauser/azure-vm-net-tools/main/script/nettools.sh"
-for vm in `az vm list -g $rg --query "[?storageProfile.imageReference.offer=='UbuntuServer'].name" -o tsv`
+for vm in $(az vm list -g $rg --query "[?storageProfile.imageReference.offer=='UbuntuServer'].name" -o tsv)
 do
  az vm extension set \
  --resource-group $rg \
@@ -124,15 +124,6 @@ do
  --protected-settings "{\"fileUris\": [\"$nettoolsuri\"],\"commandToExecute\": \"./nettools.sh\"}" \
  --no-wait
 done
-
-#Enabling boot diagnostics for all VMs in the resource group (Serial console)
-echo 'Enabling boot diagnostics for all VMs in the resource group (Serial console)'
-let "randomIdentifier=$RANDOM*$RANDOM" #used to create unique storage account name.
-#Creating Storage Account (boot diagnostics + serial console)
-az storage account create -n sc$randomIdentifier -g $rg -l $location --sku Standard_LRS -o none
-#Enable boot diagnostics
-stguri=$(az storage account show -n sc$randomIdentifier -g $rg --query primaryEndpoints.blob -o tsv)
-az vm boot-diagnostics enable --storage $stguri --ids $(az vm list -g $rg --query "[].id" -o tsv) -o none
 
 echo Creating UDRs for Hub, Spokes and GatewaySubnet
 #UDR for Hub traffic to nvalb (disables BGP propagation)
@@ -219,7 +210,7 @@ az network route-table route create --resource-group $rg --name Exception --rout
 az network vnet subnet update -n subnet1 -g $rg --vnet-name $Azurespoke2Name-vnet --route-table RT-Spoke2-to-nvalb --output none
 
 # GatewaySubnet UDR
-az network route-table create --name RT-GWSubnet-to-nvalb --resource-group $rg --location $location 
+az network route-table create --name RT-GWSubnet-to-nvalb --resource-group $rg --location $location --output none
 ## Azure Hub Subnet 1
 az network route-table route create --resource-group $rg --name HubSubnet1-to-nvalb --route-table-name RT-GWSubnet-to-nvalb \
  --address-prefix $Azurehubsubnet1Prefix \
@@ -240,4 +231,14 @@ az network route-table route create --resource-group $rg --name Spok2-to-nvalb -
  --output none
 ## Associating RT-to-GWSubnet to GatewaySubnet
 az network vnet subnet update -n GatewaySubnet -g $rg --vnet-name $AzurehubName-vnet --route-table RT-GWSubnet-to-nvalb --output none
+
+#Enabling boot diagnostics for all VMs in the resource group (Serial console)
+echo 'Enabling boot diagnostics for all VMs in the resource group (Serial console)'
+let "randomIdentifier=$RANDOM*$RANDOM" #used to create unique storage account name.
+#Creating Storage Account (boot diagnostics + serial console)
+az storage account create -n sc$randomIdentifier -g $rg -l $location --sku Standard_LRS -o none
+#Enable boot diagnostics
+stguri=$(az storage account show -n sc$randomIdentifier -g $rg --query primaryEndpoints.blob -o tsv)
+az vm boot-diagnostics enable --storage $stguri --ids $(az vm list -g $rg --query "[].id" -o tsv) -o none
+
 echo Deployment has been finished
