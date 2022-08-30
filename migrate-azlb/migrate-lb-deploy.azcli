@@ -164,7 +164,7 @@ az network route-table route create --resource-group $rg --name Exception --rout
  --next-hop-type Internet \
  --output none
 ## Associating RT-Hub-to-nvalb Hub Subnet1 
-az network vnet subnet update -n subnet1 -g $rg --vnet-name $AzurehubName-vnet --route-table RT-Hub-to-nvalb 
+az network vnet subnet update -n subnet1 -g $rg --vnet-name $AzurehubName-vnet --route-table RT-Hub-to-nvalb --output none
 
 # Spoke 1 UDR
 ## Creating UDR + Disable BGP Propagation
@@ -188,7 +188,7 @@ az network route-table route create --resource-group $rg --name Exception --rout
  --next-hop-type Internet \
  --output none
 ## Associated RT-Hub-to-nvalb to Spoke 1
-az network vnet subnet update -n subnet1 -g $rg --vnet-name $Azurespoke1Name-vnet --route-table RT-Spoke1-to-nvalb
+az network vnet subnet update -n subnet1 -g $rg --vnet-name $Azurespoke1Name-vnet --route-table RT-Spoke1-to-nvalb --output none
 
 # Spoke 2 UDR
 ## Creating UDR + Disable BGP Propagation
@@ -212,7 +212,7 @@ az network route-table route create --resource-group $rg --name Exception --rout
  --next-hop-type Internet \
  --output none
 ## Associated RT-Hub-to-nvalb to Spoke 1
-az network vnet subnet update -n subnet1 -g $rg --vnet-name $Azurespoke2Name-vnet --route-table RT-Spoke2-to-nvalb
+az network vnet subnet update -n subnet1 -g $rg --vnet-name $Azurespoke2Name-vnet --route-table RT-Spoke2-to-nvalb --output none
 
 # GatewaySubnet UDR
 az network route-table create --name RT-GWSubnet-to-nvalb --resource-group $rg --location $location 
@@ -235,5 +235,5 @@ az network route-table route create --resource-group $rg --name Spok2-to-nvalb -
  --next-hop-ip-address $nvalbip1 \
  --output none
 ## Associating RT-to-GWSubnet to GatewaySubnet
-az network vnet subnet update -n GatewaySubnet -g $rg --vnet-name $AzurehubName-vnet --route-table RT-GWSubnet-to-nvalb
+az network vnet subnet update -n GatewaySubnet -g $rg --vnet-name $AzurehubName-vnet --route-table RT-GWSubnet-to-nvalb --output none
 echo Deployment has been finished
