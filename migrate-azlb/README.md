@@ -10,9 +10,11 @@ This is an PoC to validate to migrate Internal Load Balancer to minimize downtim
 
 ## Deploy this solution
 
+```Bash
 wget -O migrate-lb-deploy.sh https://raw.githubusercontent.com/dmauser/azure-loadbalancer/main/migrate-azlb/migrate-lb-deploy.azcli
 chmod +xr migrate-lb-deploy.sh
 ./migrate-lb-deploy.sh
+```
 
 ## Validation
 
