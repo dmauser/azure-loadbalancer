@@ -13,7 +13,7 @@ password=Msft123Msft123
 # NVA specific parameters
 instances=2 #Set number of NVA instaces to be created
 nvaintname=lxnva #NVA instance name
-subnetname=nvasubnet #Subnet where NVA gets deployed
+nvasubnetname=nvasubnet #Subnet where NVA gets deployed
 
 #Variables
 mypip=$(curl -4 ifconfig.io -s) #Captures your local Public IP and adds it to NSG to restrict access to SSH only for your Public IP.
@@ -61,25 +61,25 @@ az deployment group create --name lab-$RANDOM --resource-group $rg \
 #Deploying NVA instances
 echo Deploying NVA instances on the target VNET above.
 #Creating NVA subnet on the Hub
-az network vnet subnet create --address-prefix $AzureHubNVASubnetPrefix --name $subnetname --resource-group $rg --vnet-name $AzurehubName-vnet --output none
+az network vnet subnet create --address-prefix $AzureHubNVASubnetPrefix --name $nvasubnetname --resource-group $rg --vnet-name $AzurehubName-vnet --output none
 nvanames=$(i=1;while [ $i -le $instances ];do echo $AzurehubName-$nvaintname$i; ((i++));done)
 for nvaname in $nvanames
 do
  # Enable routing, NAT and BGP on Linux NVA:
  az network public-ip create --name $nvaname-pip --resource-group $rg --location $location --sku Standard --output none
- az network nic create --name $nvaname-nic --resource-group $rg --subnet $subnetname --vnet $AzurehubName-vnet --public-ip-address $nvaname-pip --ip-forwarding true -o none
+ az network nic create --name $nvaname-nic --resource-group $rg --subnet $nvasubnetname --vnet $AzurehubName-vnet --public-ip-address $nvaname-pip --ip-forwarding true -o none
  az vm create --resource-group $rg --location $location --name $nvaname --size Standard_B1s --nics $nvaname-nic  --image UbuntuLTS --admin-username $username --admin-password $password -o none
  
  # Enable routing and NAT on Linux NVA:
  scripturi="https://raw.githubusercontent.com/dmauser/azure-loadbalancer/main/migrate-azlb/scripts/iptables.sh"
  az vm extension set --resource-group $rg --vm-name $nvaname  --name customScript --publisher Microsoft.Azure.Extensions \
- --protected-settings "{\"fileUris\": [\"$scripturi\"],\"commandToExecute\": \"./linuxrouter.sh\"}" \
+ --protected-settings "{\"fileUris\": [\"$scripturi\"],\"commandToExecute\": \"./iptables.sh\"}" \
  --no-wait
 done
 
 # Creating Load Balancer, probe and rule
 echo Creating Load Balancer, probe and rule
-az network lb create -g $rg --name $AzurehubName-nvalb --sku Standard --frontend-ip-name frontendip1 --backend-pool-name nvabackend1 --vnet-name $AzurehubName-vnet --subnet=$subnetname --output none
+az network lb create -g $rg --name $AzurehubName-nvalb --sku Standard --frontend-ip-name frontendip1 --backend-pool-name nvabackend1 --vnet-name $AzurehubName-vnet --subnet=$nvasubnetname --output none
 az network lb probe create -g $rg --lb-name $AzurehubName-nvalb --name sshprobe --protocol tcp --port 22 --output none  
 # Rule has floating IP enabled
 az network lb rule create -g $rg --lb-name $AzurehubName-nvalb --name haportrule1 --protocol all --frontend-ip-name frontendip1 --backend-pool-name nvabackend1 --probe-name sshprobe --frontend-port 0 --backend-port 0 --output none --floating-ip true
@@ -87,7 +87,7 @@ az network lb rule create -g $rg --lb-name $AzurehubName-nvalb --name haportrule
 ## ***** Add Frontend IP2 for the Zonal + HA Port rule to the same backend VMs
 # Creating frontendip2 as Zonal
 echo Creating frontendip2 as Zonal
-az network lb frontend-ip create -g $rg --name frontendip2 --lb-name $AzurehubName-nvalb  --vnet-name $AzurehubName-vnet --subnet=$subnetname --zone 1 2 3 --output none
+az network lb frontend-ip create -g $rg --name frontendip2 --lb-name $AzurehubName-nvalb  --vnet-name $AzurehubName-vnet --subnet=$nvasubnetname --zone 1 2 3 --output none
 # Creating HA Port rule for Frontendip2
 echo Creating HA Port rule for Frontendip2
 az network lb rule create -g $rg --lb-name $AzurehubName-nvalb --name haportrule2 --protocol all --frontend-ip-name frontendip2 --backend-pool-name nvabackend1 --probe-name sshprobe --frontend-port 0 --backend-port 0 --output none --floating-ip true 
@@ -104,6 +104,12 @@ do
    --lb-name $AzurehubName-nvalb \
    --output none
 done
+
+### Creating NVA NSG
+echo Creating NSG and associate to NVA Subnet
+az network nsg create --resource-group $rg --name $AzurehubName-nva-nsg --location $location -o none
+az network nsg rule create -g $rg --nsg-name $AzurehubName-nva-nsg -n 'default-allow-ssh' --direction Inbound --priority 100 --source-address-prefixes $mypip --source-port-ranges '*' --destination-address-prefixes '*' --destination-port-ranges 22 --access Allow --protocol Tcp --description "Allow inbound SSH" --output none
+az network vnet subnet update -g $rg --name $nvasubnetname --vnet-name $AzurehubName-vnet --network-security-group $AzurehubName-nva-nsg -o none
 
 ### OPTIONAL Installing tools for networking connectivity validation such as traceroute, tcptraceroute, iperf and others (check link below for more details) 
 echo Installing tools for networking connectivity validation such as traceroute, tcptraceroute, iperf and others  
@@ -135,8 +141,6 @@ nva1ip=$(az network nic show -g $rg --name $AzurehubName-lxnva1-nic --query "ipC
 nva2ip=$(az network nic show -g $rg --name $AzurehubName-lxnva2-nic  --query "ipConfigurations[].privateIpAddress" -o tsv)
 # Frontendip1
 nvalbip1=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[0].privateIpAddress" -o tsv)
-# Frontendip2
-nvalbip2=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv)
 
 ## Creating UDR + Disable BGP Propagation
 az network route-table create --name RT-Hub-to-nvalb --resource-group $rg --location $location --disable-bgp-route-propagation true -o none
@@ -177,7 +181,7 @@ az network route-table route create --resource-group $rg --name Default-to-nvalb
  --output none
 ## Traffic to Hub to nvalb
 az network route-table route create --resource-group $rg --name Hub-to-nvalb --route-table-name RT-Spoke1-to-nvalb   \
- --address-prefix $AzurehubaddressSpacePrefix \
+ --address-prefix $Azurehubsubnet1Prefix \
  --next-hop-type VirtualAppliance \
  --next-hop-ip-address $nvalbip1 \
  --output none
@@ -201,7 +205,7 @@ az network route-table route create --resource-group $rg --name Default-to-nvalb
  --output none
 ## Traffic to Hub to nvalb
 az network route-table route create --resource-group $rg --name Hub-to-nvalb --route-table-name RT-Spoke2-to-nvalb   \
- --address-prefix $AzurehubaddressSpacePrefix \
+ --address-prefix $Azurehubsubnet1Prefix \
  --next-hop-type VirtualAppliance \
  --next-hop-ip-address $nvalbip1 \
  --output none
@@ -211,7 +215,7 @@ az network route-table route create --resource-group $rg --name Exception --rout
  --address-prefix $mypip/32 \
  --next-hop-type Internet \
  --output none
-## Associated RT-Hub-to-nvalb to Spoke 1
+## Associated RT-Hub-to-nvalb to Spoke 2
 az network vnet subnet update -n subnet1 -g $rg --vnet-name $Azurespoke2Name-vnet --route-table RT-Spoke2-to-nvalb --output none
 
 # GatewaySubnet UDR

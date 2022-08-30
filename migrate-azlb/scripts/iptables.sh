@@ -16,7 +16,6 @@ iptables -t nat -A POSTROUTING -d 172.16.0.0/12 -j ACCEPT
 iptables -t nat -A POSTROUTING -d 192.168.0.0/16 -j ACCEPT
 iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
 
-
 # Allow NVA only 
 iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 iptables -A FORWARD -i eth0 -p tcp --dport 80 -j ACCEPT
