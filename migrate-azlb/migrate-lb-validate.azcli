@@ -23,6 +23,19 @@ nvalbip2=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "fronten
 # Via Bastion or Serial console run:
 sudo iptables -L -v -n --linenumbers
 
+#Example/Expected output for FORWARD rules:
+# {Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+#num   pkts bytes target     prot opt in     out     source               destination         
+#1      157  8680 ACCEPT     all  --  *      *       0.0.0.0/0            0.0.0.0/0            ctstate RELATED,ESTABLISHED
+#2       60  2480 ACCEPT     tcp  --  eth0   *       0.0.0.0/0            0.0.0.0/0            tcp dpt:80
+#3        0     0 ACCEPT     tcp  --  eth0   *       0.0.0.0/0            0.0.0.0/0            tcp dpt:443
+#4        0     0 ACCEPT     tcp  --  eth0   *       0.0.0.0/0            0.0.0.0/0            tcp dpt:53
+#5        0     0 ACCEPT     tcp  --  eth0   *       0.0.0.0/0            0.0.0.0/0            tcp dpt:22
+#6        0     0 ACCEPT     tcp  --  eth0   *       0.0.0.0/0            0.0.0.0/0            tcp dpt:5201
+#7        1    84 ACCEPT     icmp --  eth0   *       0.0.0.0/0            0.0.0.0/0            icmptype 8
+#8        0     0 ACCEPT     icmp --  eth0   *       0.0.0.0/0            0.0.0.0/0            icmptype 0
+#9        0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0  
+
 # Access Bastion or Serial console on az-SPK1-lxvm:
 # Run the following
 ping 10.0.2.4 -c 5
@@ -58,7 +71,7 @@ sudo iptables -L -v -n --line-numbers
 # Icmp lines should be removed.
 # Remember to run on both NVAs.
 
-# 2) UDR Change on Spoke 2 to point to Zonal LB (Spoke 2 points to Non-Zonal LBFE)
+# 2) UDR Change on Spoke 2 to point to Zonal LBFE (Spoke 1 points to Non-Zonal LBFE)
 
 ## Dump Non-Zonal and Zonal LB Frontends
 
