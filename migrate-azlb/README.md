@@ -8,8 +8,10 @@ This is an PoC to validate to migrate Internal Load Balancer to minimize downtim
 
 ### Network Diagram
 
-### 
-
 ## Deploy this solution
 
 ## Validation
+
+## Clean up
+
+Delete resource group.
