@@ -1,0 +1,104 @@
+#Parameters
+rg=lab-lb-migrate #Define your resource group
+location=centralus #Set location
+
+#Define parameters for Azure Hub and Spokes:
+AzurehubName=az-hub #Azure Hub Name
+AzurehubNamesubnetName=subnet1 #Azure Hub Subnet name where VM will be provisioned
+Azurespoke1Name=az-spk1 #Azure Spoke 1 name
+Azurespoke2Name=az-spk2 #Azure Spoke 1 name
+
+
+# Failover Test
+# Change LB Rule
+# Add to LB Rules
+# Add NVA on dedicated subnet instead of subnet1
+
+#Variables
+nva1ip=$(az network nic show -g $rg --name $AzurehubName-lxnva1-nic --query "ipConfigurations[].privateIpAddress" -o tsv)
+nva2ip=$(az network nic show -g $rg --name $AzurehubName-lxnva2-nic  --query "ipConfigurations[].privateIpAddress" -o tsv)
+# Frontendip1 (Non-Zonal)
+nvalbip1=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[0].privateIpAddress" -o tsv)
+# Frontendip2 (Non-Zonal)
+nvalbip2=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv)
+
+## 1) *** Test 1 change Spoke2 to use newer Frontend IP2 ***
+
+## Default route to nvalb
+## Traffic to Spoke1 via nvalb
+## Traffic to Spoke2 via nvalb
+
+## SPK1 default route to FEIP1 and SPK2 VM route to FEIP2
+az network route-table route update --resource-group $rg --name Default-to-nvalb --route-table-name RT-Spoke1-to-nvalb \
+ --address-prefix 0.0.0.0/0 \
+ --next-hop-type VirtualAppliance \
+ --next-hop-ip-address $nvalbip1 \
+ --output none
+az network route-table route update --resource-group $rg --name Default-to-nvalb --route-table-name RT-Spoke2-to-nvalb \
+ --address-prefix 0.0.0.0/0 \
+ --next-hop-type VirtualAppliance \
+ --next-hop-ip-address $nvalbip2 \
+ --output none
+#Check source/destination VMs effective routes
+echo $Azurespoke1Name-lxvm &&\
+az network nic show --resource-group $rg -n $Azurespoke1Name-lxvm-nic --query "ipConfigurations[].privateIpAddress" -o tsv &&\
+az network nic show-effective-route-table --resource-group $rg -n $Azurespoke1Name-lxvm-nic -o table
+echo $Azurespoke2Name-lxvm &&\
+az network nic show --resource-group $rg -n $Azurespoke2Name-lxvm-nic --query "ipConfigurations[].privateIpAddress" -o tsv &&\
+az network nic show-effective-route-table --resource-group $rg -n $Azurespoke2Name-lxvm-nic -o table
+
+### Test/Actions
+# 1) Capture Network Trace on both NVAs
+sudo tcpdump -n host 10.0.1.4 and host 10.0.2.4 -w nva1test1.pcap
+sudo tcpdump -n host 10.0.1.4 and host 10.0.2.4 -w nva2test1.pcap
+# 2) Run 5 connectivity tests from SPK1 VM to SPK2 VM
+x=1; while [ $x -le 5 ]; do echo test $(( x++));netcat -v -z 10.0.2.4 80; sleep 5; done 
+
+
+## 2) *** Test 1 change Spoke2 to use newer Frontend IP2 ***
+
+## SPK1 default route to FEIP2 and SPK2 VM route to FEIP1
+az network route-table route update --resource-group $rg --name Default-to-nvalb --route-table-name RT-Spoke1-to-nvalb \
+ --address-prefix 0.0.0.0/0 \
+ --next-hop-type VirtualAppliance \
+ --next-hop-ip-address $nvalbip1 \
+ --output none
+az network route-table route update --resource-group $rg --name Default-to-nvalb --route-table-name RT-Spoke2-to-nvalb \
+ --address-prefix 0.0.0.0/0 \
+ --next-hop-type VirtualAppliance \
+ --next-hop-ip-address $nvalbip2 \
+ --output none
+#Check source/destination VMs effective routes
+echo $Azurespoke1Name-lxvm &&\
+az network nic show --resource-group $rg -n $Azurespoke1Name-lxvm-nic --query "ipConfigurations[].privateIpAddress" -o tsv &&\
+az network nic show-effective-route-table --resource-group $rg -n $Azurespoke1Name-lxvm-nic -o table
+echo $Azurespoke2Name-lxvm &&\
+az network nic show --resource-group $rg -n $Azurespoke2Name-lxvm-nic --query "ipConfigurations[].privateIpAddress" -o tsv &&\
+az network nic show-effective-route-table --resource-group $rg -n $Azurespoke2Name-lxvm-nic -o table
+
+### Loopback
+# Configure loopback adapters
+### Tests
+sudo tcpdump -n host 10.0.2.4 and tcp[tcpflags]==tcp-syn
+sudo tcpdump -n host 10.0.1.4 and tcp[tcpflags]==tcp-syn
+sudo hping3 10.0.2.4 -S -p 80 -c 10
+# 5 times
+x=1; while [ $x -le 5 ]; do echo test $(( x++));netcat -v -z 10.0.2.4 80; sleep 5; done 
+i=10;x=1; while [ $x -le $i ]; do echo test $(( x++));curl 10.0.2.4 --no-keepalive; sleep 5; done 
+# Iperf
+iperf -s # Server side 
+iperf3 -c 10.0.2.4 -t 30 -P 32 # Client side
+
+# Misc/Troubleshooting
+# Disable UDRs ## Disable Route Tables (bypass Firewall) - It restores default behavior of the original LAB without the Firewall.
+az network vnet subnet update -n subnet1 -g $rg --vnet-name $AzurehubName-vnet --route-table "" -o none
+az network vnet subnet update -n subnet1 -g $rg --vnet-name $Azurespoke1Name-vnet --route-table "" -o none
+az network vnet subnet update -n subnet1 -g $rg --vnet-name $Azurespoke2Name-vnet --route-table "" -o none
+az network vnet subnet update -n GatewaySubnet -g $rg --vnet-name $AzurehubName-vnet --route-table "" -o none
+
+# Reassociate UDRs to their respective subnets
+az network vnet subnet update -n subnet1 -g $rg --vnet-name $AzurehubName-vnet --route-table RT-Hub-to-nvalb -o none
+az network vnet subnet update -n subnet1 -g $rg --vnet-name $Azurespoke1Name-vnet --route-table RT-Spoke1-to-nvalb -o none
+az network vnet subnet update -n subnet1 -g $rg --vnet-name $Azurespoke2Name-vnet --route-table RT-Spoke2-to-nvalb -o none
+az network vnet subnet update -n GatewaySubnet -g $rg --vnet-name $AzurehubName-vnet --route-table RT-GWSubnet-to-nvalb -o none
+

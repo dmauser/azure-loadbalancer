@@ -118,7 +118,7 @@ done
 vnetid=$(az network vnet show -g $rg --name $AzurehubName-vnet --query id -o tsv)
 nva1ip=$(az network nic show -g $rg --name $AzurehubName-linux-nva1-nic --query "ipConfigurations[].privateIpAddress" -o tsv)
 nva2ip=$(az network nic show -g $rg --name $AzurehubName-linux-nva2-nic  --query "ipConfigurations[].privateIpAddress" -o tsv)
-az network lb address-pool create -g $rg --lb-name $AzurehubName-linux-nvalb --name nvabackend2 --vnet $vnetid --backend-address name=nva1 ip-address=$nva1ip --backend-address name=nva2 ip-address=$nva2ip
+az network lb address-pool create -g $rg --lb-name $AzurehubName-linux-nvalb --name nvabackend2 --vnet $vnetid --backend-address name=nva1 ip-address=$nva1ip --backend-address name=nva2 ip-address=$nva2ip 
 
 # Create frontendip2 as Zonal
 az network lb frontend-ip create -g $rg --name frontendip2 --lb-name $AzurehubName-linux-nvalb  --vnet-name $AzurehubName-vnet --subnet=subnet1 --zone 1 2 3 --output none
@@ -336,8 +336,6 @@ az network nic show-effective-route-table --resource-group $rg -n $Azurespoke1Na
 echo $Azurespoke2Name-lxvm &&\
 az network nic show --resource-group $rg -n $Azurespoke2Name-lxvm-nic --query "ipConfigurations[].privateIpAddress" -o tsv &&\
 az network nic show-effective-route-table --resource-group $rg -n $Azurespoke2Name-lxvm-nic -o table
-
-
 
 ### Loopback
 # Configure loopback adapters
