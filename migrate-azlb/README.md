@@ -53,7 +53,7 @@ chmod +xr migrate-lb-deploy.sh
 
 ### Traffic symmetry validations
 
-The goal of this section is to validate the behavior of changing UDRs on Spokes and GatewaySubnet progressively from ILB non-zonal frontend IP 10.0.0.166 to zonal frontend IP 10.0.0.167. We will start by validating the lab before the changes (Validation 1) and we will proceed changing UDR on Spoke 2 to use 10.0.0.167 (Validation 2) while the others are still pointing to the original 10.0.0.166. We will finish by changing Spoke
+The goal of this section is to validate the behavior of changing UDRs on Spokes and GatewaySubnet progressively from ILB non-zonal frontend IP 10.0.0.166 to zonal frontend IP 10.0.0.167. We will start by validating the lab before the changes (Validation 1) and we will proceed changing UDR on Spoke 2 to use 10.0.0.167 (Validation 2) while the others are still pointing to the original 10.0.0.166. We will finish (Validation 3) by changing Spoke 1 to use 10.0.0.167 (zonal) while Spoke 2 uses original 10.0.0.166 (zonal).
 
 #### Validation 1
 
