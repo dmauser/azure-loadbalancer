@@ -7,6 +7,7 @@
 - [Intro](#intro)
 - [Network Diagram](#network-diagram)
 - [Deploy this solution](#deploy-this-solution)
+- [Validations](#validations)
   - [Validation 1](#validation-1)
   - [Validation 2](#validation-2)
   - [Validation 3](#validation-3)
