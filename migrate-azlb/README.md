@@ -1,6 +1,6 @@
 # Azure Load Balancer Frontend IP migration (Non-Zonal to Zonal)
 
-**DISCLAIMER:** At this moment. This is a proof of concept only and should not be used as final guidance.
+**DISCLAIMER:** At this moment this lab/article is a proof of concept only and should not be used as final guidance.
 
 **Content**
 
