@@ -4,13 +4,19 @@
 
 **Content**
 
-- [Intro](#intro)
-- [Network Diagram](#network-diagram)
-- [Deploy this solution](#deploy-this-solution)
-- [Validation 1](#validation-1)
-- [Validation 2](#validation-2)
-- [Validation 3](#validation-3)
-- [Clean up](#clean-up)
+[Intro](#intro)
+
+[Network Diagram](#network-diagram)
+
+[Deploy this solution](#deploy-this-solution)
+
+[Validation 1](#validation-1)
+
+[Validation 2](#validation-2)
+
+[Validation 3](#validation-3)
+
+[Clean up](#clean-up)
 
 ### Intro
 
