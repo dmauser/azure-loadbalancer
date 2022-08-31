@@ -208,7 +208,7 @@ sudo hping3 10.0.1.4 -S -p 80 -c 10
 curl 10.0.1.4
 
 # Access Bastion or Serial console on onprem-lxvm:
-# Run the following against az-SPK2-lxvm that got the UDR change to the Zonal LBFE.
+# Run the following commands.
 ping 10.0.2.4 -c 5
 sudo hping3 10.0.2.4 -S -p 80 -c 10
 curl 10.0.2.4
@@ -281,7 +281,7 @@ sudo hping3 10.0.1.4 -S -p 80 -c 10
 curl 10.0.1.4
 
 # Access Bastion or Serial console on onprem-lxvm:
-# Run the following against az-SPK2-lxvm that got the UDR change to the Zonal LBFE.
+# Run the following commands.
 ping 10.0.2.4 -c 5
 sudo hping3 10.0.2.4 -S -p 80 -c 10
 curl 10.0.2.4
