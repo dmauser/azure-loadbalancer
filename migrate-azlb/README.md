@@ -104,7 +104,16 @@ ping 10.0.1.4 -c 5
 sudo hping3 10.0.1.4 -S -p 80 -c 10
 curl 10.0.1.4
 
-# Optional - you can run commands fron onprem-vmlx
+
+# Optional - you can run commands from onprem-vmlx
+ping 10.0.1.4 -c 5
+sudo hping3 10.0.1.4 -S -p 80 -c 10
+curl 10.0.1.4
+
+ping 10.0.2.4 -c 5
+sudo hping3 10.0.2.4 -S -p 80 -c 10
+curl 10.0.2.4
+
 # Optional - You can also remove NVA Linux icmp rule to ensure IPtables is being enforced
 # Note: That will make ping to stop working on the following tests
 sudo iptables -L -v -n --line-numbers
