@@ -4,19 +4,13 @@
 
 **Content**
 
-[Intro](#intro)
-
-[Network Diagram](#network-diagram)
-
-[Deploy this solution](#deploy-this-solution)
-
-[Validation 1](#validation-1)
-
-[Validation 2](#validation-2)
-
-[Validation 3](#validation-3)
-
-[Clean up](#clean-up)
+- [Intro](#intro)
+- [Network Diagram](#network-diagram)
+- [Deploy this solution](#deploy-this-solution)
+  - [Validation 1](#validation-1)
+  - [Validation 2](#validation-2)
+  - [Validation 3](#validation-3)
+- [Clean up](#clean-up)
 
 ### Intro
 
@@ -55,7 +49,9 @@ chmod +xr migrate-lb-deploy.sh
 
 **Note:** the provisioning process will take 30 minutes to complete. Also, note that Azure Cloud Shell has a 20 minutes timeout and make sure you watch the process to make sure it will not timeout causing the deployment to stop. You can hit enter during the process just to make sure Serial Console will not timeout. Otherwise, you can install it using any Linux. In can you have Windows OS you can get a Ubuntu + WSL2 and install Azure CLI.
 
-## Validation 1
+### Validations
+
+#### Validation 1
 
 ![validation1](./media/validation1.png)
 
@@ -142,7 +138,8 @@ sudo iptables -L -v -n --line-numbers
 # Icmp lines should be removed.
 # ====> Remember to run on both NVAs.
 ```
-### Validation 2
+
+#### Validation 2
 
 ![validation2](./media/validation2.png)
 
@@ -214,7 +211,7 @@ curl 10.0.2.4
 
 ```
 
-### Validation 3
+#### Validation 3
 
 ![validation3](./media/validation3.png)
 
