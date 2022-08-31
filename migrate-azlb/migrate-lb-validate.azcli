@@ -11,9 +11,9 @@ Azurespoke2Name=az-spk2 #Azure Spoke 1 name
 #Variables
 nva1ip=$(az network nic show -g $rg --name $AzurehubName-lxnva1-nic --query "ipConfigurations[].privateIpAddress" -o tsv)
 nva2ip=$(az network nic show -g $rg --name $AzurehubName-lxnva2-nic  --query "ipConfigurations[].privateIpAddress" -o tsv)
-# Frontendip1 (Non-Zonal)
+# Frontendip1 (non-zonal)
 nvalbip1=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[0].privateIpAddress" -o tsv)
-# Frontendip2 (Non-Zonal)
+# Frontendip2 (zonal)
 nvalbip2=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv)
 
 
@@ -21,7 +21,7 @@ nvalbip2=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "fronten
 
 # Review the Linux NVAs have IPTables enforced
 # Via Bastion or Serial console run:
-sudo iptables -L -v -n --linenumbers
+sudo iptables -L -v -n --line-numbers
 
 #Example/Expected output for FORWARD rules:
 # {Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
@@ -69,15 +69,15 @@ sudo iptables -D FORWARD 7 # Run once
 sudo iptables -D FORWARD 7 # Run twice
 sudo iptables -L -v -n --line-numbers
 # Icmp lines should be removed.
-# Remember to run on both NVAs.
+# ====> Remember to run on both NVAs.
 
-# 2) UDR Change on Spoke 2 to point to Zonal LBFE (Spoke 1 points to Non-Zonal LBFE)
+# 2) UDR Change on Spoke 2 to point to Zonal LBFE (Spoke 1 points to non-zonal LBFE)
 
-## Dump Non-Zonal and Zonal LB Frontends
+## Dump non-zonal and Zonal LB Frontends
 
-echo 'Frontendip1 (Non-Zonal)' &&\
+echo 'Frontendip1 (non-zonal)' &&\
 az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[0].privateIpAddress" -o tsv &&\
-echo 'Frontendip2 (Non-Zonal)' &&\
+echo 'Frontendip2 (zonal)' &&\
 az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv
 
 ## Updating UDRs -> SPK1 default route to Frontendip1 and SPK2 VM route to Frontendip2
@@ -136,13 +136,13 @@ ping 10.0.2.4 -c 5
 sudo hping3 10.0.2.4 -S -p 80 -c 10
 curl 10.0.2.4
 
-# 3) UDR Change on Spoke 1 to point to Zonal LB (Spoke 2 points to Non-Zonal LBFE)
+# 3) UDR Change on Spoke 1 to point to Zonal LB (Spoke 2 points to non-zonal LBFE)
 
-## Dump Non-Zonal and Zonal LB Frontends
+## Dump non-zonal and Zonal LB Frontends
 
-echo 'Frontendip1 (Non-Zonal)' &&\
+echo 'Frontendip1 (non-zonal)' &&\
 az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[0].privateIpAddress" -o tsv &&\
-echo 'Frontendip2 (Non-Zonal)' &&\
+echo 'Frontendip2 (zonal)' &&\
 az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv
 
 ## Updating UDRs -> SPK1 default route to Frontendip1 and SPK2 VM route to Frontendip2

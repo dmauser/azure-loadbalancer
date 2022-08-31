@@ -59,7 +59,7 @@ az deployment group create --name lab-$RANDOM --resource-group $rg \
 --output none
 
 #Deploying NVA instances
-echo Deploying NVA instances on the target VNET above.
+echo Deploying NVA instances on $AzurehubName-vnet
 #Creating NVA subnet on the Hub
 az network vnet subnet create --address-prefix $AzureHubNVASubnetPrefix --name $nvasubnetname --resource-group $rg --vnet-name $AzurehubName-vnet --output none
 nvanames=$(i=1;while [ $i -le $instances ];do echo $AzurehubName-$nvaintname$i; ((i++));done)
@@ -78,7 +78,7 @@ do
 done
 
 # Creating Load Balancer, probe and rule
-echo 'Creating Load Balancer, frontendip1 (non-zonal) probe and rule'
+echo 'Creating Load Balancer, Frontend IP1 (non-zonal) probe and rule'
 az network lb create -g $rg --name $AzurehubName-nvalb --sku Standard --frontend-ip-name frontendip1 --backend-pool-name nvabackend1 --vnet-name $AzurehubName-vnet --subnet=$nvasubnetname --output none --only-show-errors
 az network lb probe create -g $rg --lb-name $AzurehubName-nvalb --name sshprobe --protocol tcp --port 22 --output none  
 # Rule has floating IP enabled
@@ -86,14 +86,14 @@ az network lb rule create -g $rg --lb-name $AzurehubName-nvalb --name haportrule
 
 ## ***** Add Frontend IP2 for the Zonal + HA Port rule to the same backend VMs
 # Creating frontendip2 as Zonal
-echo Creating frontendip2 as Zonal
+echo Creating Frontend IP2 as Zonal
 az network lb frontend-ip create -g $rg --name frontendip2 --lb-name $AzurehubName-nvalb  --vnet-name $AzurehubName-vnet --subnet=$nvasubnetname --zone 1 2 3 --output none --only-show-errors
 # Creating HA Port rule for Frontendip2
 echo Creating HA Port rule for Frontendip2
 az network lb rule create -g $rg --lb-name $AzurehubName-nvalb --name haportrule2 --protocol all --frontend-ip-name frontendip2 --backend-pool-name nvabackend1 --probe-name sshprobe --frontend-port 0 --backend-port 0 --output none --floating-ip true 
 
 # Attaching NVAs to the Backend1 as NICs
-echo Attaching NVAs to the Backend1 as NICs
+echo Attaching NVAs to the LB $AzurehubName-nvalb backend as NICs
 for vm in $nvanames
 do
   az network nic ip-config address-pool add \
@@ -106,7 +106,7 @@ do
 done
 
 ### Creating NVA NSG
-echo Creating NSG and associate to NVA Subnet
+echo Creating NSG and associating it to the NVA Subnet
 az network nsg create --resource-group $rg --name $AzurehubName-nva-nsg --location $location -o none
 az network nsg rule create -g $rg --nsg-name $AzurehubName-nva-nsg -n 'default-allow-ssh' --direction Inbound --priority 100 --source-address-prefixes $mypip --source-port-ranges '*' --destination-address-prefixes '*' --destination-port-ranges 22 --access Allow --protocol Tcp --description "Allow inbound SSH" --output none
 az network vnet subnet update -g $rg --name $nvasubnetname --vnet-name $AzurehubName-vnet --network-security-group $AzurehubName-nva-nsg -o none
