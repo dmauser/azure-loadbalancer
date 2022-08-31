@@ -1,6 +1,6 @@
 #Parameters
 rg=lab-lb-migrate #Define your resource group
-location=(az group show -n $rg --query location -o tsv)#Set location
+location=$(az group show -n $rg --query location -o tsv) #Set location
 
 #Define parameters for Azure Hub and Spokes:
 AzurehubName=az-hub #Azure Hub Name
@@ -89,6 +89,10 @@ echo 'Frontendip2 (zonal)' &&\
 az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv
 
 ## Updating UDRs -> SPK1 default route to Frontendip1 and SPK2 VM route to Frontendip2
+# Frontendip1 (non-zonal)
+nvalbip1=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[0].privateIpAddress" -o tsv)
+# Frontendip2 (zonal)
+nvalbip2=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv)
 # RT-Spoke1-to-nvalb
 az network route-table route update --resource-group $rg --name Default-to-nvalb --route-table-name RT-Spoke1-to-nvalb \
  --address-prefix 0.0.0.0/0 \
@@ -154,6 +158,10 @@ echo 'Frontendip2 (zonal)' &&\
 az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv
 
 ## Updating UDRs -> SPK1 default route to Frontendip1 and SPK2 VM route to Frontendip2
+# Frontendip1 (non-zonal)
+nvalbip1=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[0].privateIpAddress" -o tsv)
+# Frontendip2 (zonal)
+nvalbip2=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv)
 # RT-Spoke1-to-nvalb
 az network route-table route update --resource-group $rg --name Default-to-nvalb --route-table-name RT-Spoke1-to-nvalb \
  --address-prefix 0.0.0.0/0 \
@@ -210,6 +218,9 @@ sudo hping3 10.0.2.4 -S -p 80 -c 10
 curl 10.0.2.4
 
 # 4) UDR Change on GatewaySubnet to point to Zonal LB (Spoke 1 and Spoke 2 points to non-zonal LBFE)
+# Variables:
+Azurespoke1AddressSpacePrefix=10.0.1.0/24 
+Azurespoke2AddressSpacePrefix=10.0.2.0/24
 
 ## Dump non-zonal and Zonal LB Frontends
 
@@ -219,6 +230,10 @@ echo 'Frontendip2 (zonal)' &&\
 az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv
 
 ## Updating UDRs -> SPK1 default route to Frontendip1 and SPK2 VM route to Frontendip2
+# Frontendip1 (non-zonal)
+nvalbip1=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[0].privateIpAddress" -o tsv)
+# Frontendip2 (zonal)
+nvalbip2=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv)
 # RT-Spoke1-to-nvalb
 az network route-table route update --resource-group $rg --name Default-to-nvalb --route-table-name RT-Spoke1-to-nvalb \
  --address-prefix 0.0.0.0/0 \
@@ -241,9 +256,7 @@ az network route-table route create --resource-group $rg --name Hub-to-nvalb --r
  --next-hop-type VirtualAppliance \
  --next-hop-ip-address $nvalbip1 \
  --output none
-# GatewaySubnet
 # GatewaySubnet UDR
-az network route-table create --name RT-GWSubnet-to-nvalb --resource-group $rg --location $location --output none
 ## Azure Hub Subnet 1
 az network route-table route create --resource-group $rg --name HubSubnet1-to-nvalb --route-table-name RT-GWSubnet-to-nvalb \
  --address-prefix $Azurehubsubnet1Prefix \
@@ -263,7 +276,6 @@ az network route-table route create --resource-group $rg --name Spok2-to-nvalb -
  --next-hop-ip-address $nvalbip2 \
  --output none
 
-
 #Check source/destination VMs effective routes
 echo $Azurespoke1Name-lxvm &&\
 az network nic show --resource-group $rg -n $Azurespoke1Name-lxvm-nic --query "ipConfigurations[].privateIpAddress" -o tsv &&\
@@ -282,6 +294,27 @@ curl 10.0.1.4
 ping 10.0.2.4 -c 5
 sudo hping3 10.0.2.4 -S -p 80 -c 10
 curl 10.0.2.4
+
+# Change GatewaySubnet UDR back to the original Non-Zonal Frontend IP
+## Azure Hub Subnet 1
+az network route-table route create --resource-group $rg --name HubSubnet1-to-nvalb --route-table-name RT-GWSubnet-to-nvalb \
+ --address-prefix $Azurehubsubnet1Prefix \
+ --next-hop-type VirtualAppliance \
+ --next-hop-ip-address $nvalbip1 \
+ --output none
+## Azure Spoke 1
+az network route-table route create --resource-group $rg --name Spoke1-to-nvalb --route-table-name RT-GWSubnet-to-nvalb \
+ --address-prefix $Azurespoke1AddressSpacePrefix \
+ --next-hop-type VirtualAppliance \
+ --next-hop-ip-address $nvalbip1 \
+ --output none
+## Azure Spoke 2
+az network route-table route create --resource-group $rg --name Spok2-to-nvalb --route-table-name RT-GWSubnet-to-nvalb \
+ --address-prefix $Azurespoke2AddressSpacePrefix \
+ --next-hop-type VirtualAppliance \
+ --next-hop-ip-address $nvalbip1 \
+ --output none
+
 
 ### Migration
 
