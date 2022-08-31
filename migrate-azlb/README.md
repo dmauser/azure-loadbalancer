@@ -14,11 +14,17 @@
 
 ### Intro
 
-This is an PoC to validate to migrate Internal Load Balancer to minimize downtime.
+This is an proof of concept to validate to migrate Internal Load Balancer to minimize downtime.
 
 ### Network Diagram
 
-## Deploy this solution
+![](./media/networkdiagram.png)
+
+### Components
+
+TDB
+
+### Deploy this solution
 The lab is also available in the above .azcli that you can rename as .sh (shell script) and execute. You can open [Azure Cloud Shell (Bash)](https://shell.azure.com) or Azure CLI via Linux (Ubuntu) and run the following commands to build the entire lab:
 
 ```Bash
@@ -30,6 +36,8 @@ chmod +xr migrate-lb-deploy.sh
 **Note:** the provisioning process will take 60-90 minutes to complete. Also, note that Azure Cloud Shell has a 20 minutes timeout and make sure you watch the process to make sure it will not timeout causing the deployment to stop. You can hit enter during the process just to make sure Serial Console will not timeout. Otherwise, you can install it using any Linux. In can you have Windows OS you can get a Ubuntu + WSL2 and install Azure CLI.
 
 ## Validation 1
+
+![validation1](./media/validation1.png)
 
 ```Bash
 #Parameters
@@ -107,6 +115,8 @@ sudo iptables -L -v -n --line-numbers
 ```
 ### Validation 2
 
+![validation2](./media/validation2.png)
+
 ```Bash
 # 2) UDR Change on Spoke 2 to point to Zonal LBFE (Spoke 1 points to non-zonal LBFE)
 
@@ -176,6 +186,8 @@ curl 10.0.2.4
 ```
 
 ### Validation 3
+
+![validation3](./media/validation3.png)
 
 ```Bash
 
