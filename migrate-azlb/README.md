@@ -7,7 +7,7 @@
 - [Intro](#intro)
 - [Network Diagram](#network-diagram)
 - [Deploy this solution](#deploy-this-solution)
-- [Validations](#validations)
+- [Traffic symmetry validations](#traffic-symmetry-validations)
   - [Validation 1](#validation-1)
   - [Validation 2](#validation-2)
   - [Validation 3](#validation-3)
@@ -31,8 +31,9 @@ See details of Load Balancer config used on the diagram below.
  - Azure Hub (10.0.0.0/24) and two Spokes (Spoke1 - 10.0.1.0/24 and Spoke 2 - 10.0.2.0/24).
  - Each spoke as a Linux VM (az-spk1-lxvm and az-spk1-lxvm).
  - Two Linux NVAs (10.0.0.164, 10.0.0.165) with IPtables.
- - Internal Load Balancer with two Frontend IPs: first non-zonal (10.0.0.166) and second zonal (10.0.0.166).
-   - Two load balancer rules to each front end IP with HA ports using both Linux NVAs as backends.
+ - Internal Load Balancer (ILB) with two Frontend IPs: first non-zonal (10.0.0.166) and second zonal (10.0.0.166).
+   - Two load balancer (LB) rules to each front end IP with HA ports using both Linux NVAs as backends.
+   - LB rules have Floating IP enabled (this is required to re-use the same Backend as NIC)
 
 **On-premises side:**
  - On-prem VNET (192.168.100.0/24) using VPN Gateway with S2S VPN to Azure.
@@ -50,7 +51,9 @@ chmod +xr migrate-lb-deploy.sh
 
 **Note:** the provisioning process will take 30 minutes to complete. Also, note that Azure Cloud Shell has a 20 minutes timeout and make sure you watch the process to make sure it will not timeout causing the deployment to stop. You can hit enter during the process just to make sure Serial Console will not timeout. Otherwise, you can install it using any Linux. In can you have Windows OS you can get a Ubuntu + WSL2 and install Azure CLI.
 
-### Validations
+### Traffic symmetry validations
+
+The goal of this section is to validate the behavior of changing UDRs on Spokes and GatewaySubnet progressively from ILB non-zonal frontend IP 10.0.0.166 to zonal frontend IP 10.0.0.167. We will start by validating the lab before the changes (Validation 1) and we will proceed changing UDR on Spoke 2 to use 10.0.0.167 (Validation 2) while the others are still pointing to the original 10.0.0.166. We will finish by changing Spoke
 
 #### Validation 1
 
