@@ -1,6 +1,6 @@
 # Azure Load Balancer Frontend IP migration (Non-Zonal to Zonal)
 
-**DISCLAIMER:** This is a validation only and should not be used as final guidance.
+**DISCLAIMER:** At this moment. This is a proof of concept only and should not be used as final guidance.
 
 **Content**
 
@@ -14,7 +14,8 @@
 
 ### Intro
 
-This is an proof of concept to validate to migrate Internal Load Balancer to minimize downtime.
+This is an proof of concept to validate a non-Zonal frontend IP coexisting with a Zonal over a single Internal Load Balancer.
+See details of Load Balancer config used on the diagram below.
 
 ### Network Diagram
 
@@ -22,7 +23,20 @@ This is an proof of concept to validate to migrate Internal Load Balancer to min
 
 ### Components
 
-TDB
+- All VM's are accessible using SSH (restricted by your Home Public IP) Bastion or Serial Console.
+- Default username is _azureuser_ and password _Msft123Msft123_.
+
+**Azure side:**
+ - Azure Hub (10.0.0.0/24) and two Spokes (Spoke1 - 10.0.1.0/24 and Spoke 2 - 10.0.2.0/24).
+ - Each spoke as a Linux VM (az-spk1-lxvm and az-spk1-lxvm).
+ - Two Linux NVAs (10.0.0.164, 10.0.0.165) with IPtables.
+ - Internal Load Balancer with two Frontend IPs: first non-zonal (10.0.0.166) and second zonal (10.0.0.166).
+   - Two load balancer rules to each front end IP with HA ports using both Linux NVAs as backends.
+
+**On-premises side:**
+ - On-prem VNET (192.168.100.0/24) using VPN Gateway with S2S VPN to Azure.
+ - Linux VM onprem-lxvm.
+
 
 ### Deploy this solution
 The lab is also available in the above .azcli that you can rename as .sh (shell script) and execute. You can open [Azure Cloud Shell (Bash)](https://shell.azure.com) or Azure CLI via Linux (Ubuntu) and run the following commands to build the entire lab:
