@@ -10,7 +10,7 @@ network:
     renderer: networkd
     ethernets:
         lo:
-            addresses: [ "127.0.0.1/8", "::1/128", "$lbfeip1", "$lbfeip2" ]
+            addresses: [ "127.0.0.1/8", "::1/128", "$lbfeip1/32", "$lbfeip2/32" ]
 EOF
 # Apply netplan 
 netplan apply
