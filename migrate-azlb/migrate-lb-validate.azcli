@@ -16,7 +16,6 @@ nvalbip1=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "fronten
 # Frontendip2 (zonal)
 nvalbip2=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv)
 
-
 # 1) Connectivity tests before UDR change:
 
 # Review the Linux NVAs have IPTables enforced

@@ -61,7 +61,7 @@ The goal of this section is to validate the behavior of changing UDRs on Spokes 
 ```Bash
 #Parameters
 rg=lab-lb-migrate #Define your resource group
-location=(az group show -n $rg --query location -o tsv)#Set location
+location=$(az group show -n $rg --query location -o tsv) #Set location
 
 #Define parameters for Azure Hub and Spokes:
 AzurehubName=az-hub #Azure Hub Name
@@ -76,7 +76,6 @@ nva2ip=$(az network nic show -g $rg --name $AzurehubName-lxnva2-nic  --query "ip
 nvalbip1=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[0].privateIpAddress" -o tsv)
 # Frontendip2 (zonal)
 nvalbip2=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv)
-
 
 # 1) Connectivity tests before UDR change:
 
@@ -108,7 +107,6 @@ curl 10.0.2.4
 ping 10.0.1.4 -c 5
 sudo hping3 10.0.1.4 -S -p 80 -c 10
 curl 10.0.1.4
-
 
 # Optional - you can run commands from onprem-vmlx
 ping 10.0.1.4 -c 5
@@ -157,6 +155,10 @@ echo 'Frontendip2 (zonal)' &&\
 az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv
 
 ## Updating UDRs -> SPK1 default route to Frontendip1 and SPK2 VM route to Frontendip2
+# Frontendip1 (non-zonal)
+nvalbip1=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[0].privateIpAddress" -o tsv)
+# Frontendip2 (zonal)
+nvalbip2=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv)
 # RT-Spoke1-to-nvalb
 az network route-table route update --resource-group $rg --name Default-to-nvalb --route-table-name RT-Spoke1-to-nvalb \
  --address-prefix 0.0.0.0/0 \
@@ -211,7 +213,6 @@ curl 10.0.1.4
 ping 10.0.2.4 -c 5
 sudo hping3 10.0.2.4 -S -p 80 -c 10
 curl 10.0.2.4
-
 ```
 
 #### Validation 3
@@ -219,7 +220,6 @@ curl 10.0.2.4
 ![validation3](./media/validation3.png)
 
 ```Bash
-
 # 3) UDR Change on Spoke 1 to point to Zonal LB (Spoke 2 points to non-zonal LBFE)
 
 ## Dump non-zonal and Zonal LB Frontends
@@ -230,6 +230,10 @@ echo 'Frontendip2 (zonal)' &&\
 az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv
 
 ## Updating UDRs -> SPK1 default route to Frontendip1 and SPK2 VM route to Frontendip2
+# Frontendip1 (non-zonal)
+nvalbip1=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[0].privateIpAddress" -o tsv)
+# Frontendip2 (zonal)
+nvalbip2=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv)
 # RT-Spoke1-to-nvalb
 az network route-table route update --resource-group $rg --name Default-to-nvalb --route-table-name RT-Spoke1-to-nvalb \
  --address-prefix 0.0.0.0/0 \
