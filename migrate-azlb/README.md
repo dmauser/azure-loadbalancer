@@ -17,8 +17,7 @@
 
 ### Intro
 
-This is an proof of concept to validate a non-Zonal frontend IP coexisting with a Zonal over a single Internal Load Balancer.
-See details of Load Balancer config used on the diagram below.
+This lab is a proof of concept to validate a non-Zonal frontend IP coexisting with a Zonal over a single Internal Load Balancer. See details of the Load Balancer config used in the diagram below.
 
 ### Network Diagram
 
