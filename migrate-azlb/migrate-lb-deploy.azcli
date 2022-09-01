@@ -142,8 +142,6 @@ do
  --no-wait
 done
 
-
-
 echo Creating UDRs for Hub, Spokes and GatewaySubnet
 #UDR for Hub traffic to nvalb (disables BGP propagation)
 # Variables
@@ -260,4 +258,4 @@ az storage account create -n sc$randomIdentifier -g $rg -l $location --sku Stand
 stguri=$(az storage account show -n sc$randomIdentifier -g $rg --query primaryEndpoints.blob -o tsv)
 az vm boot-diagnostics enable --storage $stguri --ids $(az vm list -g $rg --query "[].id" -o tsv) -o none
 
-echo Deployment has been finished
+echo Deployment has finished
