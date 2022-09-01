@@ -58,6 +58,23 @@ az deployment group create --name lab-$RANDOM --resource-group $rg \
 --parameters deployHubVPNGateway=true deployOnpremisesVPNGateway=true enableBgp=true gatewaySku=VpnGw1 vpnGatewayGeneration=Generation1 Restrict_SSH_VM_AccessByPublicIP=$mypip sharedKey=$sharedkey deployHubERGateway=false Onprem=$JsonOnPrem Azure=$JsonAzure VmAdminUsername=$username VmAdminPassword=$password deployBastion=true \
 --output none
 
+#Deploying NVA instances
+echo Deploying NVA instances on $AzurehubName-vnet
+nvanames=$(i=1;while [ $i -le $instances ];do echo $AzurehubName-$nvaintname$i; ((i++));done)
+for nvaname in $nvanames
+do
+ # Enable routing, NAT and BGP on Linux NVA:
+ az network public-ip create --name $nvaname-pip --resource-group $rg --location $location --sku Standard --output none --only-show-errors
+ az network nic create --name $nvaname-nic --resource-group $rg --subnet $nvasubnetname --vnet $AzurehubName-vnet --public-ip-address $nvaname-pip --ip-forwarding true -o none --only-show-errors
+ az vm create --resource-group $rg --location $location --name $nvaname --size Standard_B1s --nics $nvaname-nic  --image UbuntuLTS --admin-username $username --admin-password $password -o none --only-show-errors
+ 
+ # Enable routing and NAT on Linux NVA:
+ scripturi="https://raw.githubusercontent.com/dmauser/azure-loadbalancer/main/migrate-azlb/scripts/iptables.sh"
+ az vm extension set --resource-group $rg --vm-name $nvaname  --name customScript --publisher Microsoft.Azure.Extensions \
+ --protected-settings "{\"fileUris\": [\"$scripturi\"],\"commandToExecute\": \"./iptables.sh $nvalbip1 $nvalbip1\"}" \
+ --no-wait
+done
+
 # Creating Load Balancer, probe and rule
 echo 'Creating Load Balancer, Frontend IP1 (non-zonal) probe and rule'
 az network lb create -g $rg --name $AzurehubName-nvalb --sku Standard --frontend-ip-name frontendip1 --backend-pool-name nvabackend1 --vnet-name $AzurehubName-vnet --subnet=$nvasubnetname --output none --only-show-errors
@@ -77,25 +94,6 @@ az network lb rule create -g $rg --lb-name $AzurehubName-nvalb --name haportrule
 nvalbip1=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[0].privateIpAddress" -o tsv)
 # Frontendip2 (zonal)
 nvalbip2=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv)
-
-#Deploying NVA instances
-echo Deploying NVA instances on $AzurehubName-vnet
-#Creating NVA subnet on the Hub
-az network vnet subnet create --address-prefix $AzureHubNVASubnetPrefix --name $nvasubnetname --resource-group $rg --vnet-name $AzurehubName-vnet --output none
-nvanames=$(i=1;while [ $i -le $instances ];do echo $AzurehubName-$nvaintname$i; ((i++));done)
-for nvaname in $nvanames
-do
- # Enable routing, NAT and BGP on Linux NVA:
- az network public-ip create --name $nvaname-pip --resource-group $rg --location $location --sku Standard --output none --only-show-errors
- az network nic create --name $nvaname-nic --resource-group $rg --subnet $nvasubnetname --vnet $AzurehubName-vnet --public-ip-address $nvaname-pip --ip-forwarding true -o none --only-show-errors
- az vm create --resource-group $rg --location $location --name $nvaname --size Standard_B1s --nics $nvaname-nic  --image UbuntuLTS --admin-username $username --admin-password $password -o none --only-show-errors
- 
- # Enable routing and NAT on Linux NVA:
- scripturi="https://raw.githubusercontent.com/dmauser/azure-loadbalancer/main/migrate-azlb/scripts/iptables.sh"
- az vm extension set --resource-group $rg --vm-name $nvaname  --name customScript --publisher Microsoft.Azure.Extensions \
- --protected-settings "{\"fileUris\": [\"$scripturi\"],\"commandToExecute\": \"./iptables.sh $nvalbip1 $nvalbip1\"}" \
- --no-wait
-done
 
 # Attaching NVAs to the Backend1 as NICs
 echo Attaching NVAs to the LB $AzurehubName-nvalb backend as NICs

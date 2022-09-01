@@ -1,9 +1,5 @@
 #!/bin/sh
 
-#variables
-lbfeip1=$1
-lbfeip2=$2
-
 # Enable IPv4 and IPv6 forwarding
 sysctl -w net.ipv4.ip_forward=1
 sysctl -w net.ipv6.conf.all.forwarding=1
@@ -34,15 +30,3 @@ iptables -A FORWARD -j DROP
 
 # Save to IPTables file for persistence on reboot
 iptables-save > /etc/iptables/rules.v4
-
-# Netplan to add loopback ips
-cat <<EOF > /etc/netplan/01-network-manager-all.yaml
-network:
-    version: 2
-    renderer: networkd
-    ethernets:
-        lo:
-            addresses: [ "127.0.0.1/8", "::1/128", "$lbfeip1", "$lbfeip2" ]
-EOF
-# Apply netplan 
-netplan apply
