@@ -126,6 +126,17 @@ done
 echo Creating NSG and associating it to the NVA Subnet
 az network nsg create --resource-group $rg --name $AzurehubName-nva-nsg --location $location -o none
 az network nsg rule create -g $rg --nsg-name $AzurehubName-nva-nsg -n 'default-allow-ssh' --direction Inbound --priority 100 --source-address-prefixes $mypip --source-port-ranges '*' --destination-address-prefixes '*' --destination-port-ranges 22 --access Allow --protocol Tcp --description "Allow inbound SSH" --output none
+az network nsg rule create -g $rg --nsg-name $AzurehubName-nva-nsg \
+ -n 'allow-nva-inetbreakout' \
+ --direction Inbound \
+ --priority 200 \
+ --source-address-prefixes VirtualNetwork \
+ --source-port-ranges '*' \
+ --destination-address-prefixes '*' \
+ --destination-port-ranges "*" \
+ --access Allow --protocol "*" \
+ --description "Allow NVA single NIC use Internet Breakout" \
+ --output none
 az network vnet subnet update -g $rg --name $nvasubnetname --vnet-name $AzurehubName-vnet --network-security-group $AzurehubName-nva-nsg -o none
 
 ### OPTIONAL Installing tools for networking connectivity validation such as traceroute, tcptraceroute, iperf and others (check link below for more details) 
