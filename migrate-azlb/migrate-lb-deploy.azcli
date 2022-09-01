@@ -58,6 +58,26 @@ az deployment group create --name lab-$RANDOM --resource-group $rg \
 --parameters deployHubVPNGateway=true deployOnpremisesVPNGateway=true enableBgp=true gatewaySku=VpnGw1 vpnGatewayGeneration=Generation1 Restrict_SSH_VM_AccessByPublicIP=$mypip sharedKey=$sharedkey deployHubERGateway=false Onprem=$JsonOnPrem Azure=$JsonAzure VmAdminUsername=$username VmAdminPassword=$password deployBastion=true \
 --output none
 
+# Creating Load Balancer, probe and rule
+echo 'Creating Load Balancer, Frontend IP1 (non-zonal) probe and rule'
+az network lb create -g $rg --name $AzurehubName-nvalb --sku Standard --frontend-ip-name frontendip1 --backend-pool-name nvabackend1 --vnet-name $AzurehubName-vnet --subnet=$nvasubnetname --output none --only-show-errors
+az network lb probe create -g $rg --lb-name $AzurehubName-nvalb --name sshprobe --protocol tcp --port 22 --output none  
+# Rule has floating IP enabled
+az network lb rule create -g $rg --lb-name $AzurehubName-nvalb --name haportrule1 --protocol all --frontend-ip-name frontendip1 --backend-pool-name nvabackend1 --probe-name sshprobe --frontend-port 0 --backend-port 0 --output none --floating-ip true
+
+## ***** Add Frontend IP2 for the Zonal + HA Port rule to the same backend VMs
+# Creating frontendip2 as Zonal
+echo Creating Frontend IP2 as Zonal
+az network lb frontend-ip create -g $rg --name frontendip2 --lb-name $AzurehubName-nvalb  --vnet-name $AzurehubName-vnet --subnet=$nvasubnetname --zone 1 2 3 --output none --only-show-errors
+# Creating HA Port rule for Frontendip2
+echo Creating HA Port rule for Frontendip2
+az network lb rule create -g $rg --lb-name $AzurehubName-nvalb --name haportrule2 --protocol all --frontend-ip-name frontendip2 --backend-pool-name nvabackend1 --probe-name sshprobe --frontend-port 0 --backend-port 0 --output none --floating-ip true 
+
+# Frontendip1 (non-zonal)
+nvalbip1=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[0].privateIpAddress" -o tsv)
+# Frontendip2 (zonal)
+nvalbip2=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv)
+
 #Deploying NVA instances
 echo Deploying NVA instances on $AzurehubName-vnet
 #Creating NVA subnet on the Hub
@@ -73,24 +93,9 @@ do
  # Enable routing and NAT on Linux NVA:
  scripturi="https://raw.githubusercontent.com/dmauser/azure-loadbalancer/main/migrate-azlb/scripts/iptables.sh"
  az vm extension set --resource-group $rg --vm-name $nvaname  --name customScript --publisher Microsoft.Azure.Extensions \
- --protected-settings "{\"fileUris\": [\"$scripturi\"],\"commandToExecute\": \"./iptables.sh\"}" \
+ --protected-settings "{\"fileUris\": [\"$scripturi\"],\"commandToExecute\": \"./iptables.sh $nvalbip1 $nvalbip1\"}" \
  --no-wait
 done
-
-# Creating Load Balancer, probe and rule
-echo 'Creating Load Balancer, Frontend IP1 (non-zonal) probe and rule'
-az network lb create -g $rg --name $AzurehubName-nvalb --sku Standard --frontend-ip-name frontendip1 --backend-pool-name nvabackend1 --vnet-name $AzurehubName-vnet --subnet=$nvasubnetname --output none --only-show-errors
-az network lb probe create -g $rg --lb-name $AzurehubName-nvalb --name sshprobe --protocol tcp --port 22 --output none  
-# Rule has floating IP enabled
-az network lb rule create -g $rg --lb-name $AzurehubName-nvalb --name haportrule1 --protocol all --frontend-ip-name frontendip1 --backend-pool-name nvabackend1 --probe-name sshprobe --frontend-port 0 --backend-port 0 --output none --floating-ip true
-
-## ***** Add Frontend IP2 for the Zonal + HA Port rule to the same backend VMs
-# Creating frontendip2 as Zonal
-echo Creating Frontend IP2 as Zonal
-az network lb frontend-ip create -g $rg --name frontendip2 --lb-name $AzurehubName-nvalb  --vnet-name $AzurehubName-vnet --subnet=$nvasubnetname --zone 1 2 3 --output none --only-show-errors
-# Creating HA Port rule for Frontendip2
-echo Creating HA Port rule for Frontendip2
-az network lb rule create -g $rg --lb-name $AzurehubName-nvalb --name haportrule2 --protocol all --frontend-ip-name frontendip2 --backend-pool-name nvabackend1 --probe-name sshprobe --frontend-port 0 --backend-port 0 --output none --floating-ip true 
 
 # Attaching NVAs to the Backend1 as NICs
 echo Attaching NVAs to the LB $AzurehubName-nvalb backend as NICs

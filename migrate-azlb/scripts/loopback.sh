@@ -3,15 +3,47 @@
 # LB FE IP1 -> Loop1
 ip link add name loop1 type dummy
 ip link set loop1 up
-ip addr add 10.0.20.7/32 dev loop1
+ip addr add 10.0.0.166/32 dev loop1
 
 # LB FE IP2 -> Loop2
 ip link add name loop2 type dummy
 ip link set loop2 up
-ip addr add 10.0.20.8/32 dev loop2
+ip addr add 10.0.0.167/32 dev loop2
 
 #Check
 sudo lsmod | grep dummy
+
+ifconfig lo:1 10.0.0.166 netmask 255.255.255.255
+ifconfig lo:2 10.0.0.167 netmask 255.255.255.255
+route add 10.0.0.166 dev lo:1
+route add 10.0.0.167 dev lo:2
+
+
+# To make it permanent, edit /etc/network/interfaces and adding the following:
+auto lo:1
+iface lo:1 inet static
+  address 10.0.0.166
+  netmask 255.255.255.255
+ 
+auto lo:2
+iface lo:2 inet static
+  address 10.0.0.167
+  netmask 255.255.255.255
+
+# Netplan (working and persistent to boot)
+# add content to a file: /etc/netplan/01-network-manager-all.yaml
+# 
+network:
+    version: 2
+    renderer: networkd
+    ethernets:
+        lo:
+            addresses: [ "127.0.0.1/8", "::1/128", "10.0.0.166/32", "10.0.0.167/32" ]
+
+# Validate 
+ip address show lo
+# Reference: https://netplan.io/examples
+# Note: Networkd does not allow creating new loopback devices, but a user can add new addresses to the standard loopback interface, lo, in order to have it considered a valid address on the machine as well as for custom routing
 
 # IPTables
 #https://www.digitalocean.com/community/tutorials/iptables-essentials-common-firewall-rules-and-commands

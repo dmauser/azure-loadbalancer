@@ -406,3 +406,13 @@ i=10;x=1; while [ $x -le $i ]; do echo test $(( x++));curl 10.0.2.4 --no-keepali
 # Iperf
 iperf -s # Server side 
 iperf3 -c 10.0.2.4 -t 30 -P 32 # Client side
+
+
+i=10;x=1; while [ $x -le $i ]; do echo Test $(( x++));tcptraceroute 10.0.12.4; sleep 3; done 
+i=10;x=1; while [ $x -le $i ]; do echo Test $(( x++));curl 10.0.2.4 -H "Connection: close"; sleep 1; done 
+
+while $true; do echo Test $(( x++));curl 10.0.2.4 -H "Connection: close"; sleep 1; done 
+
+
+
+iperf3 -c 10.0.2.4 -t 600
