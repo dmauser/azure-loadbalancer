@@ -11,6 +11,8 @@
   - [Validation 1](#validation-1)
   - [Validation 2](#validation-2)
   - [Validation 3](#validation-3)
+- [Migration](#migration)
+- [Results](#results)
 - [Clean up](#clean-up)
 
 ### Intro
@@ -484,9 +486,44 @@ az network route-table route create --resource-group $rg --name Spok2-to-nvalb -
  --next-hop-type VirtualAppliance \
  --next-hop-ip-address $nvalbip2 \
  --output none
+# Check all routes to ensure they are pointing to the new zonal frontend IP 10.0.0.167
+rts=$(az network route-table list -g $rg --query [].name -o tsv)
+for rt in $rts
+do
+ echo $rt
+ az network route-table show -n $rt -g $rg --query routes -o table
+done 
 ```
 
 ### Results
+
+Based on the results below, there were no downtime found during the transition.
+
+- az-spk1-lxvm:
+
+```Bash
+--- 10.0.2.4 hping statistic ---
+1170 packets transmitted, 1170 packets received, 0% packet loss
+round-trip min/avg/max = 2.6/7.6/17.4 ms
+azureuser@az-spk1-lxvm:~$ 
+```
+
+- az-spk2-lxvm:
+```bash
+--- 10.0.1.4 hping statistic ---
+1164 packets transmitted, 1164 packets received, 0% packet loss
+round-trip min/avg/max = 2.3/7.6/15.4 ms
+azureuser@az-spk2-lxvm:~$ 
+```
+
+- onprem-lxvm
+
+```bash
+--- 10.0.2.4 hping statistic ---
+1146 packets transmitted, 1146 packets received, 0% packet loss
+round-trip min/avg/max = 4.4/10.6/309.3 ms
+azureuser@onprem-lxvm:~$ 
+```
 
 ### Clean-up
 

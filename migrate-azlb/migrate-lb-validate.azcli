@@ -402,6 +402,61 @@ az network route-table route create --resource-group $rg --name Spok2-to-nvalb -
  --next-hop-type VirtualAppliance \
  --next-hop-ip-address $nvalbip2 \
  --output none
+## Default route to nvalb
+az network route-table route create --resource-group $rg --name Default-to-nvalb --route-table-name RT-Hub-to-nvalb  \
+ --address-prefix 0.0.0.0/0 \
+ --next-hop-type VirtualAppliance \
+ --next-hop-ip-address $nvalbip2 \
+ --output none
+## Traffic to Spoke1 via nvalb
+az network route-table route create --resource-group $rg --name Spk1-to-nvalb --route-table-name RT-Hub-to-nvalb  \
+ --address-prefix $Azurespoke1AddressSpacePrefix \
+ --next-hop-type VirtualAppliance \
+ --next-hop-ip-address $nvalbip2 \
+ --output none
+## Traffic to Spoke2 via nvalb
+az network route-table route create --resource-group $rg --name Spk2-to-nvalb --route-table-name RT-Hub-to-nvalb  \
+ --address-prefix $Azurespoke2AddressSpacePrefix \
+ --next-hop-type VirtualAppliance \
+ --next-hop-ip-address $nvalbip2 \
+ --output none
+
+# Check all routes to ensure they are pointing to the new zonal frontend IP 10.0.0.167
+rts=$(az network route-table list -g $rg --query [].name -o tsv)
+for rt in $rts
+do
+ echo $rt
+ az network route-table show -n $rt -g $rg --query routes -o table
+done
+
+
+# Results
+
+- az-spk1-lxvm::
+```Bash
+--- 10.0.2.4 hping statistic ---
+1170 packets transmitted, 1170 packets received, 0% packet loss
+round-trip min/avg/max = 2.6/7.6/17.4 ms
+azureuser@az-spk1-lxvm:~$ 
+``` 
+
+- az-spk2-lxvm:
+```Bash
+--- 10.0.1.4 hping statistic ---
+1164 packets transmitted, 1164 packets received, 0% packet loss
+round-trip min/avg/max = 2.3/7.6/15.4 ms
+azureuser@az-spk2-lxvm:~$ 
+``` 
+
+- onprem-lxvm
+```Bash
+--- 10.0.2.4 hping statistic ---
+1146 packets transmitted, 1146 packets received, 0% packet loss
+round-trip min/avg/max = 4.4/10.6/309.3 ms
+azureuser@onprem-lxvm:~$ 
+```
+
+
 
 # Misc/Troubleshooting/Notes
 # Disable UDRs ## Disable Route Tables (bypass Firewall) - It restores default behavior of the original LAB without the Firewall.
