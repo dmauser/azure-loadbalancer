@@ -150,6 +150,7 @@ do
  --name customScript \
  --publisher Microsoft.Azure.Extensions \
  --protected-settings "{\"fileUris\": [\"$nettoolsuri\"],\"commandToExecute\": \"./nettools.sh\"}" \
+ --force-update \
  --no-wait
 done
 
