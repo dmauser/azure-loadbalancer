@@ -225,13 +225,6 @@ nvalbip1=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "fronten
 # Frontendip2 (zonal)
 nvalbip2=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv)
 
-## Dump non-zonal and Zonal LB Frontends
-
-echo 'Frontendip1 (non-zonal)' &&\
-az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[0].privateIpAddress" -o tsv &&\
-echo 'Frontendip2 (zonal)' &&\
-az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv
-
 ## Updating UDRs -> SPK1 default route to Frontendip1 and SPK2 VM route to Frontendip2
 
 # RT-Spoke1-to-nvalb
@@ -275,6 +268,13 @@ az network route-table route create --resource-group $rg --name Spok2-to-nvalb -
  --next-hop-type VirtualAppliance \
  --next-hop-ip-address $nvalbip2 \
  --output none 
+
+## Dump non-zonal and Zonal LB Frontends
+
+echo 'Frontendip1 (non-zonal)' &&\
+az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[0].privateIpAddress" -o tsv &&\
+echo 'Frontendip2 (zonal)' &&\
+az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv
 
 #Check source/destination VMs effective routes
 echo $Azurespoke1Name-lxvm &&\
