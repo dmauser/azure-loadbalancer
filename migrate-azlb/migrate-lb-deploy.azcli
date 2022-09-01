@@ -60,7 +60,7 @@ az deployment group create --name lab-$RANDOM --resource-group $rg \
 
 #Deploying NVA instances
 #Create NVA subnet on the Hub
-az network vnet subnet create --address-prefix $AzureHubNVASubnetPrefix --name $subnetname --resource-group $rg --vnet-name $AzurehubName-vnet --output none
+az network vnet subnet create --address-prefix $AzureHubNVASubnetPrefix --name $nvasubnetname --resource-group $rg --vnet-name $AzurehubName-vnet --output none
 echo Deploying NVA instances on $AzurehubName-vnet
 nvanames=$(i=1;while [ $i -le $instances ];do echo $AzurehubName-$nvaintname$i; ((i++));done)
 for nvaname in $nvanames
