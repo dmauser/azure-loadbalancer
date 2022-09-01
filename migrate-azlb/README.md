@@ -382,10 +382,6 @@ In this section, we will start by running a continuous connectivity check on all
 # Variables:
 Azurespoke1AddressSpacePrefix=10.0.1.0/24 
 Azurespoke2AddressSpacePrefix=10.0.2.0/24
-# Frontendip1 (non-zonal)
-nvalbip1=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[0].privateIpAddress" -o tsv)
-# Frontendip2 (zonal)
-nvalbip2=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv)
 
 # Prequeisits
 # Review all UDR or ensure all of them a pointing to the Non-Zonal Front End IP by running the following commands:
@@ -429,6 +425,11 @@ az network route-table route create --resource-group $rg --name Spok2-to-nvalb -
  --next-hop-type VirtualAppliance \
  --next-hop-ip-address $nvalbip1 \
  --output none
+
+# Frontendip1 (non-zonal)
+nvalbip1=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[0].privateIpAddress" -o tsv)
+# Frontendip2 (zonal)
+nvalbip2=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv)
 
 # Run a persistent connectivity test from all three VMs (spk1, spk2 and on-premises)
 # spkvm1
