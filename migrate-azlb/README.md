@@ -1,6 +1,6 @@
 # Azure Load Balancer Frontend IP migration (Non-Zonal to Zonal)
 
-**DISCLAIMER:** At this moment this lab/article is a proof of concept only and should not be used as final guidance.
+**DISCLAIMER:** This lab/article is a proof of concept and should not be used, at this time, as recommended or official guidance.
 
 **Content**
 
@@ -34,7 +34,7 @@ This lab is a proof of concept to validate a non-Zonal frontend IP coexisting wi
  - Two Linux NVAs (10.0.0.164, 10.0.0.165) with IPtables.
  - Internal Load Balancer (ILB) with two Frontend IPs: first non-zonal (10.0.0.166) and second zonal (10.0.0.166).
    - Two load balancer (LB) rules to each front end IP with HA ports using both Linux NVAs as backends.
-   - LB rules have Floating IP enabled (this is required to re-use the same Backend as NIC)
+   - LB rules have **Floating IP enabled** (this is required to re-use the same Backend as NIC)
 
 **On-premises side:**
  - On-prem VNET (192.168.100.0/24) using VPN Gateway with S2S VPN to Azure.
