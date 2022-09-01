@@ -92,12 +92,11 @@ az network lb frontend-ip create -g $rg --name frontendip2 --lb-name $AzurehubNa
 echo Creating HA Port rule for Frontendip2
 az network lb rule create -g $rg --lb-name $AzurehubName-nvalb --name haportrule2 --protocol all --frontend-ip-name frontendip2 --backend-pool-name nvabackend1 --probe-name sshprobe --frontend-port 0 --backend-port 0 --output none --floating-ip true 
 
+# Configuring NVA Loopback interfaces
 # Frontendip1 (non-zonal)
 nvalbip1=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[0].privateIpAddress" -o tsv)
 # Frontendip2 (zonal)
 nvalbip2=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv)
-
-# Configuring NVA Loopback interfaces
 echo Configuring NVA Loopback interfaces
 nvanames=$(i=1;while [ $i -le $instances ];do echo $AzurehubName-$nvaintname$i; ((i++));done)
 for nvaname in $nvanames
@@ -106,7 +105,8 @@ do
  scripturi="https://raw.githubusercontent.com/dmauser/azure-loadbalancer/main/migrate-azlb/scripts/loopback.sh"
  az vm extension set --resource-group $rg --vm-name $nvaname  --name customScript --publisher Microsoft.Azure.Extensions \
  --protected-settings "{\"fileUris\": [\"$scripturi\"],\"commandToExecute\": \"./loopback.sh $nvalbip1 $nvalbip2\"}" \
- --force-update
+ --force-update \
+ --output none
 done
 
 # Attaching NVAs to the Backend1 as NICs
