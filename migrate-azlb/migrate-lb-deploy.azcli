@@ -97,7 +97,8 @@ nvalbip1=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "fronten
 # Frontendip2 (zonal)
 nvalbip2=$(az network lb show -g $rg --name $AzurehubName-nvalb --query "frontendIpConfigurations[1].privateIpAddress" -o tsv)
 
-# Configure NVA Loopback interfaces
+# Configuring NVA Loopback interfaces
+echo Configuring NVA Loopback interfaces
 nvanames=$(i=1;while [ $i -le $instances ];do echo $AzurehubName-$nvaintname$i; ((i++));done)
 for nvaname in $nvanames
 do
@@ -106,7 +107,6 @@ do
  az vm extension set --resource-group $rg --vm-name $nvaname  --name customScript --publisher Microsoft.Azure.Extensions \
  --protected-settings "{\"fileUris\": [\"$scripturi\"],\"commandToExecute\": \"./loopback.sh $nvalbip1 $nvalbip2\"}" \
  --force-update
- --no-wait
 done
 
 # Attaching NVAs to the Backend1 as NICs
