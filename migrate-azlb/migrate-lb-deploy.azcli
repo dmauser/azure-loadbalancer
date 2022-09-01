@@ -101,7 +101,7 @@ echo Configuring NVA Loopback interfaces
 nvanames=$(i=1;while [ $i -le $instances ];do echo $AzurehubName-$nvaintname$i; ((i++));done)
 for nvaname in $nvanames
 do
-# Enable routing and NAT on Linux NVA:
+# Enable loopback on Linux NVA:
  scripturi="https://raw.githubusercontent.com/dmauser/azure-loadbalancer/main/migrate-azlb/scripts/loopback.sh"
  az vm extension set --resource-group $rg --vm-name $nvaname  --name customScript --publisher Microsoft.Azure.Extensions \
  --protected-settings "{\"fileUris\": [\"$scripturi\"],\"commandToExecute\": \"./loopback.sh $nvalbip1 $nvalbip2\"}" \
