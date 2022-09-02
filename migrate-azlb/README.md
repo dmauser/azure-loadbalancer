@@ -4,20 +4,26 @@
 
 **Content**
 
-- [Intro](#intro)
+- [Summary](#summary-tldr)
 - [Network Diagram](#network-diagram)
 - [Deploy this solution](#deploy-this-solution)
 - [Traffic symmetry validations](#traffic-symmetry-validations)
   - [Validation 1](#validation-1)
   - [Validation 2](#validation-2)
   - [Validation 3](#validation-3)
+  - [Validation 4](#validation-4)
 - [Migration](#migration)
 - [Results](#results)
 - [Clean up](#clean-up)
 
-### Intro
+### Summary (TL;DR)
 
-This lab is a proof of concept to validate a non-Zonal frontend IP coexisting with a Zonal over a single Internal Load Balancer. See details of the Load Balancer config used in the diagram below.
+- This lab is a proof of concept to validate a non-Zonal frontend IP coexisting with a Zonal over a single Internal Load Balancer.
+- The lab scope is for a specific scenario leveraging Internal Load Balancer (ILB) using NVA's as backends.
+- Traffic between Spokes and On-premises routes over NVA via ILB that initially goes over a Frontend IP non-Zonal. The goal is to switch traffic progressively to a new Frontend IP zonal and avoid two potential issues:
+   1. **Asymmetric routing** - the initial traffic uses non-Zonal IP Frontend IP in conjunction with the Zonal Frontend IP for return traffic.
+   2. **Downtime** - when changing each UDR to use the newer Zonal Frontend IP while using other UDR points to the original Non-Zonal Frontend IP.
+- Lab Results showed no downtime or asymmetric routing when using this approach for migrating Non-Zonal to Zonal Frontend IPs.
 
 ### Network Diagram
 
