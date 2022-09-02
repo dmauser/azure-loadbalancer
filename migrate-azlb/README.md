@@ -23,7 +23,7 @@
 - Traffic between Spokes and On-premises routes over NVA via ILB that initially goes over a Frontend IP non-Zonal. The goal is to switch traffic progressively to a new Frontend IP zonal and avoid two potential issues:
    1. **Asymmetric routing** - the initial traffic uses non-Zonal IP Frontend IP in conjunction with the Zonal Frontend IP for return traffic.
    2. **Downtime** - when changing each UDR to use the newer Zonal Frontend IP while using other UDR points to the original Non-Zonal Frontend IP.
-- Lab Results showed no downtime or asymmetric routing when using this approach for migrating Non-Zonal to Zonal Frontend IPs.
+- Lab [Results](#results) showed no downtime or asymmetric routing when using this approach for migrating Non-Zonal to Zonal Frontend IPs.
 
 ### Network Diagram
 
